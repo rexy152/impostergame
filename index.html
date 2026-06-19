@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>The Imposter — Party Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1: #1c1535;
+    --bg-2: #2a1f4d;
+    --card: #fffaf3;
+    --ink: #261c40;
+    --pink: #ff5b8d;
+    --pink-dark: #e23f72;
+    --teal: #2bd9c2;
+    --teal-dark: #14b39e;
+    --gold: #ffcf56;
+    --violet: #8a6dff;
+    --text-light: #f6f2ff;
+    --muted: #b6acd6;
+    --muted-2: #8579ab;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background: var(--bg-1);
+    color: var(--text-light);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  /* floating blobs */
+  .blob{
+    position:fixed; border-radius:50%; filter:blur(60px); opacity:0.35; z-index:0; pointer-events:none;
+    animation: float 14s ease-in-out infinite;
+  }
+  .blob.b1{ width:340px; height:340px; background:var(--pink); top:-100px; left:-100px; }
+  .blob.b2{ width:300px; height:300px; background:var(--teal); bottom:-80px; right:-90px; animation-delay:-4s; }
+  .blob.b3{ width:240px; height:240px; background:var(--violet); top:40%; left:60%; animation-delay:-8s; }
+  @keyframes float{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(20px,-25px) scale(1.08); }
+  }
+
+  .scene{
+    position:relative; z-index:1;
+    width:100%; max-width:560px;
+    margin:0 auto;
+    padding: 34px 20px 60px;
+  }
+
+  header.top{
+    display:flex; justify-content:center; align-items:center;
+    margin-bottom:8px;
+  }
+  .logo-pill{
+    font-family:'Baloo 2', sans-serif; font-weight:700;
+    font-size:13px; letter-spacing:0.04em;
+    background: rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.14);
+    padding:7px 16px; border-radius:30px;
+    color: var(--muted);
+  }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; animation: fadeUp 0.45s ease; }
+  @keyframes fadeUp{ from{ opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---------- Title ---------- */
+  .title-block{ text-align:center; margin: 18px 0 28px; }
+  h1.title{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size: clamp(40px, 13vw, 58px);
+    line-height:1;
+    margin:0 0 12px;
+    background: linear-gradient(95deg, var(--pink), var(--gold) 55%, var(--teal));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  p.tagline{
+    margin:0 auto; font-size:15px; line-height:1.6; color: var(--muted);
+    max-width:34ch;
+  }
+
+  /* ---------- Card ---------- */
+  .panel{
+    background: rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(6px);
+    border-radius:26px;
+    padding:24px 22px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    margin-bottom:18px;
+  }
+
+  .field{ margin-bottom:22px; }
+  .field:last-child{ margin-bottom:0; }
+  label.field-label{
+    display:block;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    color: var(--text-light);
+    margin-bottom:10px;
+  }
+  .field-hint{
+    font-size:12px; color: var(--muted-2); margin-top:8px; line-height:1.5;
+  }
+
+  .stepper{
+    display:flex; align-items:center; gap:10px;
+  }
+  .stepper button{
+    width:42px; height:42px; border-radius:50%;
+    background: rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.16);
+    color: var(--text-light); font-family:'Baloo 2', sans-serif; font-size:20px; font-weight:700;
+    cursor:pointer; transition: transform 0.12s, background 0.15s;
+  }
+  .stepper button:hover{ background: rgba(255,255,255,0.16); }
+  .stepper button:active{ transform: scale(0.92); }
+  .stepper input{
+    width:64px; text-align:center;
+    background: rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:14px;
+    color: var(--text-light); font-family:'Baloo 2', sans-serif; font-size:20px; font-weight:700;
+    height:42px;
+  }
+  .stepper input:focus{ outline:none; border-color: var(--teal); }
+  .stepper input::-webkit-outer-spin-button,
+  .stepper input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+
+  .theme-grid{
+    display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;
+  }
+  .theme-tab{
+    font-family:'Inter', sans-serif; font-weight:600;
+    font-size:13px;
+    color: var(--muted);
+    background: rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:16px;
+    padding:12px 12px;
+    cursor:pointer;
+    text-align:center;
+    transition: all 0.15s;
+  }
+  .theme-tab:hover{ border-color: rgba(255,255,255,0.3); color: var(--text-light); }
+  .theme-tab.selected{
+    border-color: transparent;
+    color: #1c1535;
+    background: linear-gradient(95deg, var(--teal), var(--gold));
+    font-weight:700;
+  }
+
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+  }
+  .switch{
+    flex-shrink:0;
+    width:50px; height:30px; border-radius:30px;
+    background: rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.18);
+    position:relative; cursor:pointer; padding:0;
+    transition: background 0.2s;
+  }
+  .switch.on{ background: linear-gradient(95deg, var(--teal), var(--teal-dark)); border-color: transparent; }
+  .switch-knob{
+    position:absolute; top:3px; left:3px;
+    width:22px; height:22px; border-radius:50%;
+    background:#fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+  }
+  .switch.on .switch-knob{ transform: translateX(20px); }
+
+  textarea.names{
+    width:100%;
+    background: rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:16px;
+    color: var(--text-light);
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    padding:12px 14px;
+    resize:vertical;
+    min-height:46px;
+  }
+  textarea.names:focus{ outline:none; border-color: var(--teal); }
+  textarea.names::placeholder{ color: var(--muted-2); }
+
+  .error-msg{
+    display:none;
+    font-size:13px; color: #2a1430;
+    background: var(--gold);
+    padding:10px 14px; border-radius:14px; margin-bottom:16px;
+    font-weight:600;
+  }
+  .error-msg.show{ display:block; }
+
+  .btn-primary{
+    width:100%;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:17px;
+    background: linear-gradient(95deg, var(--pink), var(--violet));
+    color: #fff;
+    border:none; border-radius:18px;
+    padding:16px;
+    cursor:pointer;
+    transition: transform 0.12s, box-shadow 0.15s;
+    box-shadow: 0 10px 24px rgba(255,91,141,0.3);
+  }
+  .btn-primary:hover{ box-shadow: 0 14px 30px rgba(255,91,141,0.4); }
+  .btn-primary:active{ transform: scale(0.98); }
+
+  .btn-secondary{
+    width:100%;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-light);
+    border:1px solid rgba(255,255,255,0.16);
+    border-radius:18px;
+    padding:14px;
+    cursor:pointer;
+    margin-top:10px;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover{ border-color: var(--teal); color: var(--teal); }
+
+  details.howto{
+    margin-top:18px; color: var(--muted); font-size:13px;
+  }
+  details.howto summary{
+    cursor:pointer; font-family:'Baloo 2', sans-serif; font-weight:600;
+    font-size:14px; color: var(--text-light);
+    list-style:none;
+  }
+  details.howto summary::-webkit-details-marker{ display:none; }
+  details.howto summary::before{ content:"💬 "; }
+  details.howto p{ line-height:1.7; margin:10px 0 0; }
+
+  /* ---------- Reveal screen ---------- */
+  .agent-meta{
+    display:flex; justify-content:center; margin-bottom:14px;
+  }
+  .agent-pill{
+    font-family:'Baloo 2', sans-serif; font-weight:700;
+    font-size:14px;
+    background: rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.16);
+    padding:8px 18px; border-radius:30px;
+  }
+
+  .progress-track{
+    height:6px; background: rgba(255,255,255,0.1); border-radius:6px; margin-bottom:24px; overflow:hidden;
+  }
+  .progress-fill{ height:100%; background: linear-gradient(95deg, var(--pink), var(--teal)); border-radius:6px; transition: width 0.4s ease; }
+
+  .file-card{
+    position:relative;
+    perspective: 1200px;
+    min-height:340px;
+  }
+  .card-inner{
+    position:relative; width:100%; height:100%; min-height:340px;
+    border-radius:26px;
+    overflow:hidden;
+    box-shadow: 0 24px 50px rgba(0,0,0,0.4);
+  }
+
+  .cover{
+    position:absolute; inset:0;
+    background: linear-gradient(160deg, #352a5c, #221a3d);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; cursor:pointer;
+    z-index:3;
+    border-radius:26px;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .cover.lifted{ opacity:0; transform: scale(1.05); pointer-events:none; }
+  .cover.no-anim{ transition:none !important; }
+  .cover .peek-icon{
+    font-size:42px;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+  }
+  .cover .cover-text{
+    font-family:'Baloo 2', sans-serif; font-weight:700;
+    font-size:16px; color: var(--text-light); text-align:center; max-width:24ch; line-height:1.5;
+  }
+  .cover .cover-sub{
+    font-size:12.5px; color: var(--muted-2); max-width:26ch; line-height:1.6; text-align:center;
+  }
+
+  .reveal-content{
+    position:absolute; inset:0;
+    border-radius:26px;
+    padding:34px 26px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+  }
+  .reveal-content.word-card{ background: linear-gradient(160deg, var(--teal), var(--teal-dark)); color:#062925; }
+  .reveal-content.imposter-card{ background: linear-gradient(160deg, var(--pink), var(--pink-dark)); color:#3a0418; }
+
+  .reveal-emoji{ font-size:34px; margin-bottom:6px; }
+  .reveal-label{
+    font-family:'Inter', sans-serif; font-weight:700; font-size:12px; letter-spacing:0.1em;
+    text-transform:uppercase; opacity:0.7; margin-bottom:14px;
+  }
+  .reveal-word{
+    font-family:'Baloo 2', sans-serif; font-weight:800;
+    font-size: clamp(30px, 9vw, 42px);
+    line-height:1.05; margin-bottom:4px;
+    word-break:break-word;
+  }
+  .reveal-word-lv{
+    font-family:'Inter', sans-serif; font-weight:600; font-style:italic;
+    font-size:15px; opacity:0.75; margin-bottom:18px;
+  }
+  .reveal-instruction{
+    font-size:13px; line-height:1.7; max-width:30ch; opacity:0.9; font-weight:500;
+  }
+  .hint-chip{
+    margin-top:18px;
+    font-family:'Baloo 2', sans-serif; font-weight:700; font-size:14px;
+    background: rgba(255,255,255,0.22);
+    border:1px dashed rgba(255,255,255,0.5);
+    border-radius:14px;
+    padding:9px 16px;
+    display:flex; flex-direction:column; gap:3px; align-items:center;
+  }
+  .hint-chip-lv{
+    font-family:'Inter', sans-serif; font-weight:500; font-style:italic;
+    font-size:12px; opacity:0.75;
+  }
+
+  .next-btn-wrap{ margin-top:22px; display:none; }
+  .next-btn-wrap.show{ display:block; }
+
+  /* ---------- Discuss screen ---------- */
+  .brief-card{ text-align:center; }
+  .brief-card .big-emoji{ font-size:44px; margin-bottom:10px; }
+  .brief-card h2{
+    font-family:'Baloo 2', sans-serif; font-weight:800;
+    font-size:30px; margin:0 0 12px;
+    background: linear-gradient(95deg, var(--pink), var(--gold) 55%, var(--teal));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .brief-card p{ font-size:14px; line-height:1.8; color: var(--muted); margin:0 0 18px; }
+
+  .chip-row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:4px; }
+  .chip{
+    font-size:12px; font-weight:600; letter-spacing:0.02em;
+    border:1px solid rgba(255,255,255,0.16); border-radius:20px;
+    padding:7px 14px; color: var(--text-light);
+    background: rgba(255,255,255,0.06);
+    font-family:'Inter', sans-serif;
+  }
+
+  .reveal-box{
+    display:none;
+    border-top:1px dashed rgba(255,255,255,0.18);
+    margin-top:20px; padding-top:18px; text-align:left;
+  }
+  .reveal-box.show{ display:block; animation: fadeUp 0.4s ease; }
+  .reveal-box .rb-line{ font-size:14px; margin-bottom:8px; line-height:1.7; color: var(--muted); }
+  .reveal-box .rb-line b{ color: var(--teal); }
+  .reveal-box .rb-line.danger b{ color: var(--pink); }
+
+  footer.foot{
+    text-align:center; margin-top:26px; font-size:11.5px;
+    color: var(--muted-2);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .screen.active{ animation:none; }
+    .cover{ transition:none; }
+    .blob{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="scene">
+  <header class="top">
+    <span class="logo-pill">🎭 pass &amp; play</span>
+  </header>
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <section class="screen active" id="screen-setup">
+    <div class="title-block">
+      <h1 class="title">The Imposter</h1>
+      <p class="tagline">Everyone gets the same secret word — except the imposters. Pass the phone and sniff out who's faking it.</p>
+    </div>
+
+    <div class="panel">
+      <div class="error-msg" id="errorMsg"></div>
+
+      <div class="field">
+        <label class="field-label">How many players?</label>
+        <div class="stepper">
+          <button type="button" id="playersMinus">–</button>
+          <input type="number" id="playersInput" value="6" min="3" max="20">
+          <button type="button" id="playersPlus">+</button>
+        </div>
+        <div class="field-hint">3–20 players, passing one device around the group.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">How many imposters?</label>
+        <div class="stepper">
+          <button type="button" id="impMinus">–</button>
+          <input type="number" id="impInput" value="1" min="1" max="19">
+          <button type="button" id="impPlus">+</button>
+        </div>
+        <div class="field-hint">Must be fewer than the number of players.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Pick a category</label>
+        <div class="theme-grid" id="themeGrid"></div>
+      </div>
+
+      <div class="field">
+        <div class="toggle-row">
+          <div>
+            <label class="field-label" style="margin-bottom:4px;">Give imposters a hint</label>
+            <div class="field-hint" style="margin-top:0;">A vague clue so they can bluff — turn off for hard mode.</div>
+          </div>
+          <button type="button" class="switch on" id="hintToggle" aria-pressed="true">
+            <span class="switch-knob"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Player names <span style="color:var(--muted-2); font-weight:400; font-size:13px;">— optional</span></label>
+        <textarea class="names" id="namesInput" placeholder="Sam, Priya, Lee, Tom..."></textarea>
+        <div class="field-hint">Leave blank to just use Player 1, Player 2, etc.</div>
+      </div>
+
+      <button class="btn-primary" id="startBtn">Let's Play 🚀</button>
+
+      <details class="howto">
+        <summary>How to play</summary>
+        <p>One secret word is picked for the round. Everyone sees it — except the imposters. Pass the phone around the group: each person checks their screen privately, then hands it to the next player.<br><br>
+        Going in turn, everyone says one word that hints at the secret, without saying it outright. Imposters don't know the word, so they have to bluff. After clues are out, talk it over and vote out whoever seems sketchy. Imposters win if they dodge the vote — or guess the word correctly when caught.</p>
+      </details>
+    </div>
+
+    <footer class="foot">Only the player named on screen should look 👀</footer>
+  </section>
+
+  <!-- ============ REVEAL SCREEN ============ -->
+  <section class="screen" id="screen-reveal">
+    <div class="agent-meta">
+      <span class="agent-pill" id="agentNo">Player 1</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:16%;"></div></div>
+
+    <div class="file-card">
+      <div class="card-inner">
+        <div class="cover" id="cover">
+          <div class="peek-icon">🙈</div>
+          <div class="cover-text" id="coverName">Tap to peek</div>
+          <div class="cover-sub">Make sure no one else can see your screen</div>
+        </div>
+        <div id="revealContent"></div>
+      </div>
+    </div>
+
+    <div class="next-btn-wrap" id="nextBtnWrap">
+      <button class="btn-primary" id="nextBtn">Got it — pass it on 👉</button>
+    </div>
+  </section>
+
+  <!-- ============ DISCUSS SCREEN ============ -->
+  <section class="screen" id="screen-discuss">
+    <div class="panel brief-card">
+      <div class="big-emoji">🗣️</div>
+      <h2>Time to talk</h2>
+      <p>Everyone's seen their card. Go around the group — each person gives one word that hints at the secret, without saying it. Then discuss and vote out whoever sounds unsure.</p>
+      <div class="chip-row" id="chipRow"></div>
+
+      <div class="reveal-box" id="revealBox">
+        <div class="rb-line">The word was <b id="rbWord">—</b></div>
+        <div class="rb-line danger" id="rbImposters">The imposter was <b>—</b></div>
+      </div>
+    </div>
+
+    <button class="btn-secondary" id="revealAllBtn">Reveal the imposters 🔍</button>
+    <button class="btn-primary" id="replayBtn" style="margin-top:10px;">Same players, new word 🔁</button>
+    <button class="btn-secondary" id="newSetupBtn">Start a new game ⚙️</button>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  // ---------- Word bank (English, Latvian, Imposter hint EN, Imposter hint LV) ----------
+  const THEMES = {
+    movies: { label:"🎬 Movies", words:[
+      ["Titanic","Titāniks","Iceberg","Aisbergs"],["Jaws","Žokļi","Shark","Haizivs"],["Frozen","Sasalis","Elsa","Elza"],
+      ["Inception","Sākotne","Spinning top","Griežas vilciņš"],["Gladiator","Gladiators","Colosseum","Kolizejs"],["Jurassic Park","Juras perioda parks","T-Rex","T-rekss"],
+      ["The Matrix","Matrica","Red pill","Sarkanā tablete"],["Rocky","Rokijs","Boxing gloves","Bokseru cimdi"],["Avatar","Avatars","Pandora","Pandora"],
+      ["Shrek","Šreks","Swamp","Purvs"],["Ghostbusters","Spoku mednieki","Proton pack","Protonu ierīce"],["Toy Story","Rotaļlietu stāsts","Woody","Vudijs"],
+      ["Casablanca","Kasablanka","Piano","Klavieres"],["Psycho","Psiho","Knife","Nazis"],["Coco","Koko","Guitar","Ģitāra"],
+      ["Moana","Moana","Maui","Maui"],["Joker","Džokeris","Clown makeup","Klauna grims"],["Dune","Kāpa","Sandworm","Smilšu tārps"],
+      ["Barbie","Barbija","Pink","Rozā"],["Up","Augšup","Balloons","Baloni"]
+    ]},
+    animals: { label:"🐘 Animals", words:[
+      ["Elephant","Zilonis","Tusks","Ilkņi"],["Octopus","Astoņkājis","Tentacles","Taustekļi"],["Penguin","Pingvīns","Ice","Ledus"],
+      ["Kangaroo","Ķengurs","Pouch","Soma"],["Cheetah","Gepards","Spots","Plankumi"],["Dolphin","Delfīns","Sonar","Sonārs"],
+      ["Flamingo","Flamingo","One leg","Viena kāja"],["Gorilla","Gorilla","Chest beat","Krūšu sišana"],["Hedgehog","Ezis","Spines","Adatas"],
+      ["Peacock","Pāvs","Feathers","Spalvas"],["Raccoon","Jenots","Mask","Maska"],["Walrus","Valzirgs","Whiskers","Ūsas"],
+      ["Otter","Ūdrs","Holding hands","Tur roku rokā"],["Falcon","Piekūns","Talons","Nagi"],["Camel","Kamielis","Hump","Kupris"],
+      ["Koala","Koala","Eucalyptus","Eikalipts"],["Bison","Bizons","Horns","Ragi"],["Toucan","Tukans","Beak","Knābis"],
+      ["Wolf","Vilks","Howl","Gaudošana"],["Platypus","Pīļknābis","Webbed feet","Peldplēves kājas"]
+    ]},
+    food: { label:"🍕 Food & Drink", words:[
+      ["Pizza","Pica","Pepperoni","Peperoni"],["Sushi","Suši","Wasabi","Vasabi"],["Tacos","Tako","Salsa","Salsa"],
+      ["Pancakes","Pankūkas","Syrup","Sīrups"],["Ramen","Ramens","Noodles","Nūdeles"],["Croissant","Kruasāns","Butter","Sviests"],
+      ["Burrito","Burito","Guacamole","Gvakamole"],["Lasagna","Lazanja","Cheese","Siers"],["Curry","Karijs","Rice","Rīsi"],
+      ["Dumplings","Pelmeņi","Soy sauce","Sojas mērce"],["Falafel","Falafels","Hummus","Humuss"],["Waffles","Vafeles","Whipped cream","Saputots krējums"],
+      ["Espresso","Espreso","Caffeine","Kofeīns"],["Smoothie","Smūtijs","Blender","Blenderis"],["Paella","Paeljа","Saffron","Safrāns"],
+      ["Risotto","Rizoto","Parmesan","Parmezāns"],["Hot Dog","Karstā suns","Mustard","Sinepes"],["Pretzel","Krekenis","Salt","Sāls"],
+      ["Mochi","Moči","Rice flour","Rīsu milti"],["Gelato","Itāļu saldējums","Cone","Konuss"]
+    ]},
+    sports: { label:"🏆 Sports", words:[
+      ["Tennis","Teniss","Racket","Rakete"],["Surfing","Sērfošana","Surfboard","Sērfa dēlis"],["Boxing","Bokss","Gloves","Cimdi"],
+      ["Archery","Loka šaušana","Arrow","Bulta"],["Cricket","Krikets","Wicket","Vārtiņi"],["Hockey","Hokejs","Puck","Ripa"],
+      ["Cycling","Riteņbraukšana","Pedals","Pedāļi"],["Rowing","Airēšana","Oar","Airis"],["Climbing","Kāpšana","Rope","Virve"],
+      ["Skiing","Slēpošana","Poles","Nūjas"],["Rugby","Regbijs","Scrum","Bullis"],["Fencing","Paukošana","Mask","Maska"],
+      ["Golf","Golfs","Tee","Starta paliktnis"],["Judo","Džudo","Belt","Josta"],["Volleyball","Volejbols","Spike","Sitiens"],
+      ["Curling","Kērlings","Broom","Slota"],["Badminton","Badmintons","Shuttlecock","Spalvu bumbiņa"],["Sailing","Buršana","Sail","Bura"],
+      ["Darts","Šautriņas","Bullseye","Centrs"],["Bowling","Boulings","Pins","Ķegļi"]
+    ]},
+    countries: { label:"🌍 Countries", words:[
+      ["Japan","Japāna","Mount Fuji","Fudzi kalns"],["Brazil","Brazīlija","Amazon","Amazone"],["Kenya","Kenija","Safari","Safari"],
+      ["Norway","Norvēģija","Fjords","Fjordi"],["Peru","Peru","Machu Picchu","Mačupikču"],["Iceland","Islande","Geysers","Gejzeri"],
+      ["Morocco","Maroka","Sahara","Sahāra"],["Vietnam","Vjetnama","Rice paddies","Rīsu lauki"],["Greece","Grieķija","Acropolis","Akropole"],
+      ["Canada","Kanāda","Maple syrup","Kļavu sīrups"],["Egypt","Ēģipte","Pyramids","Piramīdas"],["Thailand","Taizeme","Temples","Tempļi"],
+      ["Portugal","Portugāle","Port wine","Porto vīns"],["Chile","Čīle","Andes","Andi"],["Finland","Somija","Sauna","Sauna"],
+      ["India","Indija","Taj Mahal","Tadžmahals"],["Mexico","Meksika","Cactus","Kaktuss"],["Croatia","Horvātija","Dubrovnik","Dubrovņika"],
+      ["Jordan","Jordānija","Petra","Petra"],["Nepal","Nepāla","Everest","Everests"]
+    ]},
+    mix: { label:"🎲 Random Mix", words:[] }
+  };
+  THEMES.mix.words = Object.keys(THEMES).filter(k=>k!=="mix").flatMap(k=>THEMES[k].words);
+
+  // ---------- State ----------
+  let state = {
+    players: 6,
+    imposters: 1,
+    theme: "movies",
+    names: [],
+    hintEnabled: true,
+    imposterSet: new Set(),
+    word: "",
+    revealIndex: 0
+  };
+
+  // ---------- Elements ----------
+  const screens = {
+    setup: document.getElementById('screen-setup'),
+    reveal: document.getElementById('screen-reveal'),
+    discuss: document.getElementById('screen-discuss')
+  };
+  function showScreen(name){
+    Object.values(screens).forEach(s=>s.classList.remove('active'));
+    screens[name].classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  // theme tabs
+  const themeGrid = document.getElementById('themeGrid');
+  Object.keys(THEMES).forEach(key=>{
+    const btn = document.createElement('div');
+    btn.className = 'theme-tab' + (key===state.theme ? ' selected':'');
+    btn.textContent = THEMES[key].label;
+    btn.dataset.key = key;
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.theme-tab').forEach(t=>t.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.theme = key;
+    });
+    themeGrid.appendChild(btn);
+  });
+
+  // hint toggle
+  const hintToggle = document.getElementById('hintToggle');
+  hintToggle.addEventListener('click', ()=>{
+    state.hintEnabled = !state.hintEnabled;
+    hintToggle.classList.toggle('on', state.hintEnabled);
+    hintToggle.setAttribute('aria-pressed', String(state.hintEnabled));
+  });
+
+  // steppers
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  const playersInput = document.getElementById('playersInput');
+  const impInput = document.getElementById('impInput');
+
+  document.getElementById('playersMinus').addEventListener('click', ()=>{
+    playersInput.value = clamp(parseInt(playersInput.value||3)-1, 3, 20);
+  });
+  document.getElementById('playersPlus').addEventListener('click', ()=>{
+    playersInput.value = clamp(parseInt(playersInput.value||3)+1, 3, 20);
+  });
+  document.getElementById('impMinus').addEventListener('click', ()=>{
+    impInput.value = clamp(parseInt(impInput.value||1)-1, 1, 19);
+  });
+  document.getElementById('impPlus').addEventListener('click', ()=>{
+    impInput.value = clamp(parseInt(impInput.value||1)+1, 1, 19);
+  });
+
+  function showError(msg){
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearError(){
+    document.getElementById('errorMsg').classList.remove('show');
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function startGame(){
+    clearError();
+    const players = clamp(parseInt(playersInput.value)||0, 3, 20);
+    const imposters = clamp(parseInt(impInput.value)||0, 1, 19);
+    playersInput.value = players;
+    impInput.value = imposters;
+
+    if(imposters >= players){
+      showError("Imposters must be fewer than the number of players.");
+      return;
+    }
+
+    const rawNames = document.getElementById('namesInput').value
+      .split(',').map(s=>s.trim()).filter(Boolean);
+
+    state.players = players;
+    state.imposters = imposters;
+    state.names = (rawNames.length === players) ? rawNames : [];
+
+    const wordList = THEMES[state.theme].words;
+    state.word = wordList[Math.floor(Math.random()*wordList.length)];
+
+    const idx = shuffle([...Array(players).keys()]);
+    state.imposterSet = new Set(idx.slice(0, imposters));
+    state.revealIndex = 0;
+
+    renderReveal();
+    showScreen('reveal');
+  }
+  document.getElementById('startBtn').addEventListener('click', startGame);
+
+  // ---------- Reveal screen ----------
+  const cover = document.getElementById('cover');
+  const coverName = document.getElementById('coverName');
+  const revealContent = document.getElementById('revealContent');
+  const nextBtnWrap = document.getElementById('nextBtnWrap');
+  const agentNo = document.getElementById('agentNo');
+  const progressFill = document.getElementById('progressFill');
+
+  function agentLabel(i){
+    return state.names[i] ? state.names[i] : ("Player " + (i+1));
+  }
+
+  function renderReveal(){
+    const i = state.revealIndex;
+    const label = agentLabel(i);
+    agentNo.textContent = label;
+    progressFill.style.width = (((i+1)/state.players)*100) + "%";
+
+    coverName.textContent = "Tap to peek — " + label;
+
+    // Snap the cover shut instantly (no transition) so the next
+    // player's card is never visible underneath while it resets.
+    cover.classList.add('no-anim');
+    cover.classList.remove('lifted');
+    void cover.offsetWidth; // force reflow
+    cover.classList.remove('no-anim');
+
+    nextBtnWrap.classList.remove('show');
+
+    const isImposter = state.imposterSet.has(i);
+    if(isImposter){
+      const hintBlock = state.hintEnabled
+        ? '<div class="hint-chip">Hint: ' + state.word[2] + '<span class="hint-chip-lv">' + state.word[3] + '</span></div>'
+        : '';
+      revealContent.innerHTML =
+        '<div class="reveal-content imposter-card">' +
+          '<div class="reveal-emoji">🎭</div>' +
+          '<div class="reveal-label">You\'re the Imposter</div>' +
+          '<div class="reveal-instruction">You don\'t know the word. Listen closely, bluff with confidence, and don\'t get caught.</div>' +
+          hintBlock +
+        '</div>';
+    }else{
+      revealContent.innerHTML =
+        '<div class="reveal-content word-card">' +
+          '<div class="reveal-label">Your secret word</div>' +
+          '<div class="reveal-word">' + state.word[0] + '</div>' +
+          '<div class="reveal-word-lv">' + state.word[1] + '</div>' +
+          '<div class="reveal-instruction">Give a one-word clue when it\'s your turn. Never say the word itself.</div>' +
+        '</div>';
+    }
+  }
+
+  cover.addEventListener('click', ()=>{
+    cover.classList.add('lifted');
+    nextBtnWrap.classList.add('show');
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    state.revealIndex++;
+    if(state.revealIndex >= state.players){
+      renderDiscuss();
+      showScreen('discuss');
+    }else{
+      renderReveal();
+    }
+  });
+
+  // ---------- Discuss screen ----------
+  const chipRow = document.getElementById('chipRow');
+  const revealBox = document.getElementById('revealBox');
+
+  function renderDiscuss(){
+    chipRow.innerHTML =
+      '<span class="chip">' + state.players + ' players</span>' +
+      '<span class="chip">' + state.imposters + ' imposter' + (state.imposters>1?'s':'') + '</span>' +
+      '<span class="chip">' + THEMES[state.theme].label + '</span>';
+    revealBox.classList.remove('show');
+  }
+
+  document.getElementById('revealAllBtn').addEventListener('click', ()=>{
+    const impNames = [...state.imposterSet].sort((a,b)=>a-b).map(i=>agentLabel(i));
+    document.getElementById('rbWord').textContent = state.word[0] + ' / ' + state.word[1];
+    document.getElementById('rbImposters').innerHTML =
+      (impNames.length>1 ? 'The imposters were ' : 'The imposter was ') +
+      '<b>' + impNames.join(', ') + '</b>';
+    revealBox.classList.add('show');
+  });
+
+  document.getElementById('replayBtn').addEventListener('click', ()=>{
+    const wordList = THEMES[state.theme].words;
+    state.word = wordList[Math.floor(Math.random()*wordList.length)];
+    const idx = shuffle([...Array(state.players).keys()]);
+    state.imposterSet = new Set(idx.slice(0, state.imposters));
+    state.revealIndex = 0;
+    renderReveal();
+    showScreen('reveal');
+  });
+
+  document.getElementById('newSetupBtn').addEventListener('click', ()=>{
+    showScreen('setup');
+  });
+})();
+</script>
+</body>
+</html>
